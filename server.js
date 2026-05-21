@@ -1,6 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import { GoogleGenAI } from '@google/genai';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -12,6 +18,35 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// CUSTOM INJECTION INTERCEPTOR
+// Dynamically reads your frontend files and rewrites 'localhost' to a relative path before sending it to the browser!
+app.get('/', (req, res) => {
+    let htmlPath = path.join(__dirname, 'public', 'index.html');
+    if (fs.existsSync(htmlPath)) {
+        let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+        // Auto-corrects any hardcoded localhosts inside the HTML file itself
+        htmlContent = htmlContent.replace(/http:\/\/localhost:3000\/chat/g, '/chat');
+        htmlContent = htmlContent.replace(/http:\/\/localhost:3000/g, '');
+        return res.send(htmlContent);
+    }
+    res.status(404).send('Frontend index.html not found');
+});
+
+// Dynamic JavaScript Patching Route
+app.get('/*.js', (req, res, next) => {
+    let filePath = path.join(__dirname, 'public', req.path);
+    if (fs.existsSync(filePath)) {
+        let jsContent = fs.readFileSync(filePath, 'utf8');
+        // Forces any hardcoded fetch calls to drop localhost and use clean relative routes
+        jsContent = jsContent.replace(/http:\/\/localhost:3000\/chat/g, '/chat');
+        jsContent = jsContent.replace(/http:\/\/localhost:3000/g, '');
+        res.setHeader('Content-Type', 'application/javascript');
+        return res.send(jsContent);
+    }
+    next();
+});
+
 app.use(express.static('public')); 
 
 const PORT = process.env.PORT || 3000;
@@ -57,7 +92,6 @@ const handleChatRequest = async (req, res) => {
                     }
                 ]);
 
-                // Multi-key payload return to fit whichever response key your frontend uses
                 return res.json({ 
                     reply: "🔒 **CORE OVERRIDES ACTIVATED.** Creator identity verified. Welcome back, Maker.",
                     response: "🔒 **CORE OVERRIDES ACTIVATED.** Creator identity verified. Welcome back, Maker."
@@ -133,7 +167,6 @@ const handleChatRequest = async (req, res) => {
 };
 
 // CATCH-ALL ROUTE LISTENER
-// Maps every possible endpoint layout name your frontend could be looking for straight to our handler logic
 app.post('/chat', handleChatRequest);
 app.post('/api/chat', handleChatRequest);
 app.post('/message', handleChatRequest);
@@ -141,7 +174,7 @@ app.post('/api/message', handleChatRequest);
 
 app.listen(PORT, () => {
     console.log(`\n==================================================`);
-    console.log(`🚀 Y2K ENGINE ONLINE | HYBRID FALLBACK ROUTING OK`);
-    console.log(`📡 Listening on port: ${PORT}`);
+    console.log(`🚀 Y2K ENGINE ONLINE | CREATOR LOCKED: INYOURDREAMS039`);
+    console.log(`📡 Force Override Route Patching: ACTIVE`);
     console.log(`==================================================\n`);
 });
