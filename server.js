@@ -16,7 +16,7 @@ const model = genAI.getGenerativeModel({
 
 const chatHistories = new Map();
 
-// FORCE SERVE THE ORANGE THEME DIRECTLY FROM SERVER.JS
+// SERVE SIDEBAR + DRAGON BALL SUPER BACKGROUND DIRECTLY FROM CORE
 app.get('/', (req, res) => {
     res.send(`
 <!DOCTYPE html>
@@ -27,48 +27,104 @@ app.get('/', (req, res) => {
     <title>Y2K AI ENGINE</title>
     <style>
         body {
-            background-color: #0d0600;
+            background: linear-gradient(rgba(13, 6, 0, 0.85), rgba(26, 13, 0, 0.9)), 
+                        url('https://images.alphacoders.com/888/888844.jpg') no-repeat center center fixed;
+            background-size: cover;
             color: #ff7700;
             font-family: 'Courier New', Courier, monospace;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* SIDEBAR IMPLEMENTATION */
+        .sidebar {
+            width: 260px;
+            background-color: rgba(15, 7, 0, 0.95);
+            border-right: 2px solid #ff7700;
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border-bottom: 1px dashed #ff7700;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .sidebar-menu {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .menu-item {
+            border: 1px solid #ff7700;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+            background: rgba(255, 119, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+        .menu-item:hover {
+            background-color: #ff7700;
+            color: #000;
+            box-shadow: 0 0 10px #ff5500;
+        }
+        .sidebar-footer {
+            font-size: 11px;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        /* MAIN INTERFACE WINDOW */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
+            padding: 20px;
         }
         .terminal-container {
             border: 2px solid #ff7700;
-            background-color: #1a0d00;
-            box-shadow: 0 0 15px #ff5500;
+            background-color: rgba(26, 13, 0, 0.92);
+            box-shadow: 0 0 25px rgba(255, 85, 0, 0.4);
             width: 100%;
-            max-width: 600px;
+            max-width: 750px;
             border-radius: 5px;
             overflow: hidden;
         }
         .terminal-header {
             background-color: #ff7700;
             color: #000;
-            padding: 10px;
+            padding: 12px;
             font-weight: bold;
             text-align: center;
             letter-spacing: 2px;
         }
         .messages-container {
-            height: 400px;
+            height: 450px;
             overflow-y: auto;
             padding: 15px;
             display: flex;
             flex-direction: column;
             gap: 10px;
             border-bottom: 2px solid #ff7700;
-            background: linear-gradient(rgba(18, 9, 0, 1) 50%, rgba(0, 0, 0, 1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background: linear-gradient(rgba(18, 9, 0, 0.95) 50%, rgba(0, 0, 0, 0.95) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.04));
             background-size: 100% 4px, 6px 100%;
         }
         .message {
             max-width: 80%;
-            padding: 8px 12px;
+            padding: 10px 14px;
             border-radius: 4px;
             line-height: 1.4;
         }
@@ -80,14 +136,14 @@ app.get('/', (req, res) => {
         }
         .ai-message {
             align-self: flex-start;
-            background-color: #2a1400;
+            background-color: rgba(42, 20, 0, 0.85);
             border: 1px solid #ff7700;
             color: #ff9933;
         }
         .input-area {
             display: flex;
             background-color: #000;
-            padding: 10px;
+            padding: 12px;
         }
         .input-area span {
             color: #ff7700;
@@ -111,7 +167,7 @@ app.get('/', (req, res) => {
             color: #ff7700;
             cursor: pointer;
             font-family: 'Courier New', Courier, monospace;
-            padding: 5px 15px;
+            padding: 5px 20px;
             font-weight: bold;
         }
         button:hover {
@@ -121,17 +177,35 @@ app.get('/', (req, res) => {
     </style>
 </head>
 <body>
-    <div class="terminal-container">
-        <div class="terminal-header">Y2K AI ENGINE v3.6</div>
-        <div class="messages-container" id="chat-box">
-            <div class="message ai-message">System Online. Welcome back, Creator.</div>
+
+    <div class="sidebar">
+        <div>
+            <div class="sidebar-title">CONTROL PANEL</div>
+            <div class="sidebar-menu">
+                <div class="menu-item" onclick="alert('System Core: Operational')">CORE STATUS</div>
+                <div class="menu-item" onclick="alert('Log Engine Clear')">CLEAR MATRIX</div>
+                <div class="menu-item" onclick="alert('Y2K Protocol Active')">SYSTEM INFO</div>
+            </div>
         </div>
-        <div class="input-area">
-            <span>&gt;</span>
-            <input type="text" id="user-input" placeholder="Enter command transmission..." autocomplete="off">
-            <button id="send-btn">EXECUTE</button>
+        <div class="sidebar-footer">
+            MAKER MODE ACTIVE<br>ID: O39_ENGINE
         </div>
     </div>
+
+    <div class="main-content">
+        <div class="terminal-container">
+            <div class="terminal-header">Y2K AI ENGINE v3.6 // DB-SUPER_EDITION</div>
+            <div class="messages-container" id="chat-box">
+                <div class="message ai-message">System Online. Welcome back, Creator.</div>
+            </div>
+            <div class="input-area">
+                <span>&gt;</span>
+                <input type="text" id="user-input" placeholder="Enter command transmission..." autocomplete="off">
+                <button id="send-btn">EXECUTE</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const chatBox = document.getElementById('chat-box');
         const userInputField = document.getElementById('user-input');
