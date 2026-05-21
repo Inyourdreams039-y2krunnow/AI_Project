@@ -18,6 +18,7 @@ const model = genAI.getGenerativeModel({
 
 const chatHistories = new Map();
 
+// SERVE USER INTERFACE
 app.get('/', (req, res) => {
     res.send(`
 <!DOCTYPE html>
@@ -84,6 +85,7 @@ app.get('/', (req, res) => {
     `);
 });
 
+// AI CHAT PROCESSOR
 app.post('/chat', async (req, res) => {
     try {
         const { message } = req.body;
