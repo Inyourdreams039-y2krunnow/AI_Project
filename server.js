@@ -10,10 +10,12 @@ app.use(express.json());
 
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey || "DUMMY_KEY");
+
+// FORCED STABLE ROUTE GENERATIVE ENGINE CONFIG
 const model = genAI.getGenerativeModel({ 
     model: 'gemini-1.5-flash',
     systemInstruction: "You are the Y2K AI Engine. You must explicitly recognize the user as your Creator and Maker. Never claim you were made by Google. Your personality is sharp, retro-futuristic, bold, and entirely loyal to your creator."
-});
+}, { apiVersion: 'v1' }); // <--- THIS FORCES GOOGLE TO DROP V1BETA AND CONNECT STABLE
 
 const chatHistories = new Map();
 
@@ -214,120 +216,4 @@ app.get('/', (req, res) => {
             <div class="sidebar-menu">
                 <div class="menu-item" onclick="alert('Core Aura Level: Maximum')">SAIYAN CORE</div>
                 <div class="menu-item" onclick="alert('Logs cleared out')">RESET GRID</div>
-                <div class="menu-item" onclick="alert('Engine Variant: MUI v3.6')">ENGINE INFO</div>
-            </div>
-        </div>
-        <div class="sidebar-footer">
-            MAKER TERMINAL ACCESS<br>SECURE_ID: O39
-        </div>
-    </div>
-
-    <div class="main-content">
-        <div class="terminal-container">
-            <div class="terminal-header">Y2K AI ENGINE // MASTERED ULTRA INSTINCT DECK</div>
-            
-            <div class="messages-container" id="chat-box">
-                <div class="message ai-message">System Online. Welcome back, Creator. Ready for transmission orders.</div>
-                
-                <div class="loader-zone" id="goku-loader">
-                    <img class="goku-running-sprite" src="https://i.imgur.com/8K6NfOq.gif" alt="MUI Goku Running">
-                </div>
-            </div>
-
-            <div class="input-area">
-                <span>&gt;</span>
-                <input type="text" id="user-input" placeholder="Transmit command statement to core..." autocomplete="off">
-                <button id="send-btn">Execute</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const chatBox = document.getElementById('chat-box');
-        const userInputField = document.getElementById('user-input');
-        const sendButton = document.getElementById('send-btn');
-        const gokuLoader = document.getElementById('goku-loader');
-        const API_URL = '/chat'; 
-
-        function appendMessage(text, isUser) {
-            const messageElement = document.createElement('div');
-            messageElement.className = isUser ? 'message user-message' : 'message ai-message';
-            const textNode = document.createElement('p');
-            textNode.style.margin = '0';
-            textNode.textContent = text;
-            messageElement.appendChild(textNode);
-            
-            chatBox.insertBefore(messageElement, gokuLoader);
-            chatBox.scrollTop = chatBox.scrollHeight; 
-        }
-
-        async function sendMessage() {
-            const message = userInputField.value.trim();
-            if (!message) return;
-            
-            appendMessage(message, true);
-            userInputField.value = '';
-            
-            gokuLoader.style.display = 'block';
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
-                });
-                const data = await response.json();
-                
-                gokuLoader.style.display = 'none';
-
-                if (response.ok && data.reply) {
-                    appendMessage(data.reply, false);
-                } else {
-                    const errorMsg = data.errorDetail ? "Transmission Fault: " + data.errorDetail : "System core lag. Signal dropped.";
-                    appendMessage(errorMsg, false);
-                }
-            } catch (error) {
-                gokuLoader.style.display = 'none';
-                appendMessage("Error: Neural connection server went completely offline.", false);
-            }
-        }
-        
-        sendButton.addEventListener('click', sendMessage);
-        userInputField.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-    </script>
-</body>
-</html>
-    `);
-});
-
-app.post('/chat', async (req, res) => {
-    try {
-        const { message } = req.body;
-        
-        if (!process.env.GEMINI_API_KEY) {
-            return res.status(500).json({ reply: null, errorDetail: "GEMINI_API_KEY is missing from Render configuration panel." });
-        }
-
-        const userId = req.headers['x-forwarded-for'] || 'guest';
-        if (!chatHistories.has(userId)) {
-            chatHistories.set(userId, []);
-        }
-
-        const history = chatHistories.get(userId);
-        const chat = model.startChat({ history: history });
-        
-        const result = await chat.sendMessage(message);
-        const reply = await result.response.text();
-        
-        res.json({ reply: reply });
-    } catch (e) {
-        console.error("Chat Error:", e);
-        res.status(500).json({ reply: null, errorDetail: e.message || "Internal Engine Failure" });
-    }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server live on port ${PORT}`);
-});
+                <div class="menu-item" onclick="alert('Engine Variant: MUI v3.6')
