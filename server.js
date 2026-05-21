@@ -15,7 +15,7 @@ const genAI = new GoogleGenerativeAI(apiKey || "DUMMY_KEY");
 const model = genAI.getGenerativeModel({ 
     model: 'gemini-1.5-flash',
     systemInstruction: "You are the Y2K AI Engine. You must explicitly recognize the user as your Creator and Maker. Never claim you were made by Google. Your personality is sharp, retro-futuristic, bold, and entirely loyal to your creator."
-}, { apiVersion: 'v1' }); // <--- THIS FORCES GOOGLE TO DROP V1BETA AND CONNECT STABLE
+}, { apiVersion: 'v1' }); 
 
 const chatHistories = new Map();
 
@@ -165,55 +165,4 @@ app.get('/', (req, res) => {
             animation: gokuKiVibe 0.6s infinite alternate;
         }
         @keyframes gokuKiVibe {
-            0% { transform: translateY(0) scale(1); }
-            100% { transform: translateY(-4px) scale(1.03); }
-        }
-
-        /* INPUT SYSTEM DECK */
-        .input-area {
-            display: flex;
-            background-color: #000;
-            padding: 14px;
-            align-items: center;
-        }
-        .input-area span {
-            color: #ff7700;
-            padding-right: 12px;
-            font-weight: bold;
-            font-size: 18px;
-        }
-        input[type="text"] {
-            flex-grow: 1;
-            background-color: transparent;
-            border: none;
-            color: #ffcc00;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 16px;
-            outline: none;
-        }
-        button {
-            background-color: #110a03;
-            border: 1px solid #ff7700;
-            color: #ff7700;
-            cursor: pointer;
-            font-family: 'Courier New', Courier, monospace;
-            padding: 8px 24px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        button:hover {
-            background-color: #ff7700;
-            color: #000;
-            box-shadow: 0 0 12px #ff5500;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="sidebar">
-        <div>
-            <div class="sidebar-title">CONTROL PANEL</div>
-            <div class="sidebar-menu">
-                <div class="menu-item" onclick="alert('Core Aura Level: Maximum')">SAIYAN CORE</div>
-                <div class="menu-item" onclick="alert('Logs cleared out')">RESET GRID</div>
-                <div class="menu-item" onclick="alert('Engine Variant: MUI v3.6')
+            0% { transform: translateY(
