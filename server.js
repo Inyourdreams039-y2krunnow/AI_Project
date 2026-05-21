@@ -4,7 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 
 const app = express();
 
-// Enable global CORS so your frontend can communicate without hitting origin walls
+// Global CORS configurations to stop frontend origin blocks dead in their tracks
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST'],
@@ -17,29 +17,29 @@ app.use(express.static('public'));
 const PORT = process.env.PORT || 3000;
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// Session maps
+// Active session storage profiles mapped securely by request connection address
 const chatHistories = new Map();
 const verifiedCreators = new Set(); 
 
 const SECRET_CREATOR_PASSWORD = 'masterkey039'; 
 
-// CORE CHAT HANDLER INTERFACE
+// CORE ROUTER INTERFACE HANDLER
 const handleChatRequest = async (req, res) => {
     try {
-        // Fallback checks to safely extract message text regardless of frontend casing/naming differences
+        // Fallback variables to capture incoming text no matter how your frontend names the key
         const message = req.body.message || req.body.text || req.body.prompt;
 
         if (!message) {
-            return res.status(400).json({ error: 'Message content is empty or malformed.' });
+            return res.status(400).json({ error: 'Message payload wrapper missing text parameters.' });
         }
 
-        // Isolate sessions cleanly by user IP signatures to patch the global data leak
+        // Fixes data leaks by mapping memory strictly to each separate user's IP signature
         const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'global-guest';
         const userId = clientIp.toString(); 
 
         const trimmedMessage = message.trim();
 
-        // 1. Intercept security passcode unlock commands
+        // 1. Core security authorization interceptor
         if (trimmedMessage.startsWith('/unlock ')) {
             const passwordAttempt = trimmedMessage.replace('/unlock ', '').trim();
             
@@ -57,7 +57,7 @@ const handleChatRequest = async (req, res) => {
                     }
                 ]);
 
-                // Double payload matching: returns both 'reply' and 'response' to fit any frontend script requirements
+                // Multi-key payload return to fit whichever response key your frontend uses
                 return res.json({ 
                     reply: "🔒 **CORE OVERRIDES ACTIVATED.** Creator identity verified. Welcome back, Maker.",
                     response: "🔒 **CORE OVERRIDES ACTIVATED.** Creator identity verified. Welcome back, Maker."
@@ -70,7 +70,7 @@ const handleChatRequest = async (req, res) => {
             }
         }
 
-        // 2. Initialize context memory arrays per IP session
+        // 2. Memory sandbox initializer per user session IP
         if (!chatHistories.has(userId)) {
             const isCreator = verifiedCreators.has(userId);
             
@@ -92,7 +92,7 @@ const handleChatRequest = async (req, res) => {
 
         const userHistory = chatHistories.get(userId);
 
-        // 3. Counteract unauthorized text injection exploits
+        // 3. Automated identity injection shield guards
         if (!verifiedCreators.has(userId)) {
             if (trimmedMessage.toLowerCase().includes("i am your maker") || trimmedMessage.toLowerCase().includes("i am your creator")) {
                 userHistory.push({
@@ -106,7 +106,7 @@ const handleChatRequest = async (req, res) => {
             userHistory.push({ role: 'user', parts: [{ text: trimmedMessage }] });
         }
 
-        // 4. Generate response via Gemini Free Tier Module
+        // 4. Fire generation requests out to Gemini API Engine
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: userHistory
@@ -119,7 +119,7 @@ const handleChatRequest = async (req, res) => {
             chatHistories.set(userId, [userHistory[0], userHistory[1], ...userHistory.slice(-30)]);
         }
 
-        // Returns both structures to satisfy whichever variable name your sidebar script looks for
+        // Returns multiple formats to satisfy your sidebar script variables perfectly
         res.json({ 
             reply: replyText,
             response: replyText,
@@ -127,20 +127,21 @@ const handleChatRequest = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Internal Server Processing Crash:', error);
-        res.status(500).json({ error: 'Failed to generate response structural stream.' });
+        console.error('Server Internal Thread Error:', error);
+        res.status(500).json({ error: 'Failed to process AI request parameters.' });
     }
 };
 
-// MULTI-ROUTE REDIRECT BINDING
-// This catches traffic hitting /chat, /api/chat, or /message, sending it all to the same safe logic handler
+// CATCH-ALL ROUTE LISTENER
+// Maps every possible endpoint layout name your frontend could be looking for straight to our handler logic
 app.post('/chat', handleChatRequest);
 app.post('/api/chat', handleChatRequest);
 app.post('/message', handleChatRequest);
+app.post('/api/message', handleChatRequest);
 
 app.listen(PORT, () => {
     console.log(`\n==================================================`);
-    console.log(`🚀 Y2K SECURE ENGINE | ADVANCED COMPATIBILITY ACTIVE`);
+    console.log(`🚀 Y2K ENGINE ONLINE | HYBRID FALLBACK ROUTING OK`);
     console.log(`📡 Listening on port: ${PORT}`);
     console.log(`==================================================\n`);
 });
