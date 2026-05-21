@@ -8,7 +8,13 @@ app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Initialize the API safely with a fallback check
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+    console.error("⚠️ WARNING: GEMINI_API_KEY environment variable is completely empty on the server!");
+}
+
+const genAI = new GoogleGenerativeAI(apiKey || "DUMMY_KEY");
 const model = genAI.getGenerativeModel({ 
     model: 'gemini-1.5-flash',
     systemInstruction: "You are the Y2K AI Engine. You must explicitly recognize the user as your Creator and Maker. Never claim you were made by Google. Your personality is sharp, retro-futuristic, bold, and entirely loyal to your creator."
@@ -16,7 +22,7 @@ const model = genAI.getGenerativeModel({
 
 const chatHistories = new Map();
 
-// SERVE SIDEBAR + DRAGON BALL SUPER BACKGROUND DIRECTLY FROM CORE
+// SERVE SIDEBAR + ULTRA HIGH-RES UNBLOCKED DBS BACKGROUND
 app.get('/', (req, res) => {
     res.send(`
 <!DOCTYPE html>
@@ -27,8 +33,9 @@ app.get('/', (req, res) => {
     <title>Y2K AI ENGINE</title>
     <style>
         body {
-            background: linear-gradient(rgba(13, 6, 0, 0.85), rgba(26, 13, 0, 0.9)), 
-                        url('https://images.alphacoders.com/888/888844.jpg') no-repeat center center fixed;
+            /* Using a high-reliability unblocked HD Dragon Ball Super background mirror */
+            background: linear-gradient(rgba(13, 6, 0, 0.82), rgba(26, 13, 0, 0.88)), 
+                        url('https://i.imgur.com/vH97Z9v.jpeg') no-repeat center center fixed;
             background-size: cover;
             color: #ff7700;
             font-family: 'Courier New', Courier, monospace;
@@ -39,7 +46,6 @@ app.get('/', (req, res) => {
             overflow: hidden;
         }
         
-        /* SIDEBAR IMPLEMENTATION */
         .sidebar {
             width: 260px;
             background-color: rgba(15, 7, 0, 0.95);
@@ -85,7 +91,6 @@ app.get('/', (req, res) => {
             opacity: 0.7;
         }
 
-        /* MAIN INTERFACE WINDOW */
         .main-content {
             flex-grow: 1;
             display: flex;
@@ -238,7 +243,9 @@ app.get('/', (req, res) => {
                 if (response.ok && data.reply) {
                     appendMessage(data.reply, false);
                 } else {
-                    appendMessage("System core lag. Signal dropped.", false);
+                    // Display direct backend error if available to stop guessing
+                    const errorMsg = data.errorDetail ? "Error: " + data.errorDetail : "System core lag. Signal dropped.";
+                    appendMessage(errorMsg, false);
                 }
             } catch (error) {
                 appendMessage("Error: Could not connect to the neural server engine.", false);
@@ -255,8 +262,12 @@ app.get('/', (req, res) => {
 app.post('/chat', async (req, res) => {
     try {
         const { message } = req.body;
-        const userId = req.headers['x-forwarded-for'] || 'guest';
         
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(500).json({ reply: null, errorDetail: "GEMINI_API_KEY missing on host environment variables." });
+        }
+
+        const userId = req.headers['x-forwarded-for'] || 'guest';
         if (!chatHistories.has(userId)) {
             chatHistories.set(userId, []);
         }
@@ -270,7 +281,7 @@ app.post('/chat', async (req, res) => {
         res.json({ reply: reply });
     } catch (e) {
         console.error("Chat Error:", e);
-        res.status(500).json({ reply: "Neural engine network lag. Try again." });
+        res.status(500).json({ reply: null, errorDetail: e.message || "Internal Engine Failure" });
     }
 });
 
