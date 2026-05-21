@@ -150,7 +150,7 @@
 </head>
 <body>
 
-    <h2 style="margin-bottom: 10px;">Y2K AI ENGINE</h2>
+    <h2 style="margin-bottom: 10px; transition: color 0.3s ease;">Y2K AI ENGINE</h2>
 
     <div id="chat-container">
         <div id="chat-box">
@@ -167,8 +167,9 @@
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
-        
-        // Generate a random unique ID for this browser tab instance to manage unique session memory
+        const pageTitle = document.querySelector('h2'); // Grabs your "Y2K AI ENGINE" heading
+
+        // Generate a random unique ID for this browser tab instance
         const userId = 'session-' + Math.random().toString(36).substr(2, 9);
 
         function scrollToBottom() {
@@ -208,6 +209,12 @@
                 
                 // Remove typing loader
                 document.getElementById('typing-loader').remove();
+
+                // If the creator successfully unlocked the terminal, upgrade the title screen!
+                if (data.reply.includes("CORE OVERRIDES ACTIVATED")) {
+                    pageTitle.textContent = "⚡ Y2K CREATOR PROTOCOL";
+                    pageTitle.style.color = "#6366f1";
+                }
 
                 // Render AI Response bubble using marked parsing library
                 const aiDiv = document.createElement('div');
