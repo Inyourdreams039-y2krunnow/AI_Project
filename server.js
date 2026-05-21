@@ -5,15 +5,12 @@ import { GoogleGenAI } from '@google/genai';
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static('public')); // Serves your original sidebar frontend files
 
-// Dynamic port binding required for smooth cloud hosting on Render
 const PORT = process.env.PORT || 3000;
-
-// Initialize the Gemini API client using your secure environment variable
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// Session trackers
+// Session maps
 const chatHistories = new Map();
 const verifiedCreators = new Set(); 
 
@@ -22,22 +19,28 @@ const SECRET_CREATOR_PASSWORD = 'masterkey039';
 
 app.post('/api/chat', async (req, res) => {
     try {
-        const { message, userId = 'default-user' } = req.body;
+        const { message } = req.body;
 
         if (!message) {
             return res.status(400).json({ error: 'Message content is required.' });
         }
 
+        // --- SECURITY LEAK FIX ---
+        // Instead of defaulting to 'default-user', we capture the user's IP address or 
+        // request origin headers to isolate their session memory securely.
+        const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'global-guest';
+        const userId = clientIp.toString(); 
+
         const trimmedMessage = message.trim();
 
-        // 1. Intercept explicit security override commands
+        // 1. Intercept security override commands
         if (trimmedMessage.startsWith('/unlock ')) {
             const passwordAttempt = trimmedMessage.replace('/unlock ', '').trim();
             
             if (passwordAttempt === SECRET_CREATOR_PASSWORD) {
                 verifiedCreators.add(userId);
                 
-                // Initialize high-security loyalty protocol instructions
+                // Initialize high-security loyalty protocol instructions strictly for THIS IP session
                 chatHistories.set(userId, [
                     {
                         role: 'user',
@@ -55,7 +58,7 @@ app.post('/api/chat', async (req, res) => {
             }
         }
 
-        // 2. Initialize context memory paths if new session
+        // 2. Initialize context memory paths if it's a brand new session for this IP
         if (!chatHistories.has(userId)) {
             const isCreator = verifiedCreators.has(userId);
             
@@ -91,7 +94,7 @@ app.post('/api/chat', async (req, res) => {
             userHistory.push({ role: 'user', parts: [{ text: trimmedMessage }] });
         }
 
-        // 4. Generate AI model generation response
+        // 4. Generate response via Gemini
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: userHistory
@@ -100,7 +103,7 @@ app.post('/api/chat', async (req, res) => {
         const replyText = response.text || "No response generated.";
         userHistory.push({ role: 'model', parts: [{ text: replyText }] });
 
-        // Memory buffer cleaning threshold
+        // Memory buffer cleaning threshold (prevents server slowdowns)
         if (userHistory.length > 32) {
             chatHistories.set(userId, [userHistory[0], userHistory[1], ...userHistory.slice(-30)]);
         }
@@ -115,7 +118,7 @@ app.post('/api/chat', async (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`\n==================================================`);
-    console.log(`🚀 Y2K SECURE ENGINE | PORT LOGIC STABILIZED`);
+    console.log(`🚀 Y2K SECURE ENGINE | ISOLATION ROUTING ACTIVE`);
     console.log(`📡 Listening on port: ${PORT}`);
     console.log(`==================================================\n`);
 });
