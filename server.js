@@ -7,14 +7,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
+// Dynamic port binding required for smooth cloud hosting on Render
 const PORT = process.env.PORT || 3000;
+
+// Initialize the Gemini API client using your secure environment variable
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+// Session trackers
 const chatHistories = new Map();
-// Tracks which session IDs have successfully verified as the creator
 const verifiedCreators = new Set(); 
 
-// CHANGE THIS to your secret password! Keep the single quotes around it.
+// Core passcode configuration
 const SECRET_CREATOR_PASSWORD = 'masterkey039'; 
 
 app.post('/api/chat', async (req, res) => {
@@ -27,14 +30,14 @@ app.post('/api/chat', async (req, res) => {
 
         const trimmedMessage = message.trim();
 
-        // 1. Check if the user is trying to unlock Maker Mode
+        // 1. Intercept explicit security override commands
         if (trimmedMessage.startsWith('/unlock ')) {
             const passwordAttempt = trimmedMessage.replace('/unlock ', '').trim();
             
             if (passwordAttempt === SECRET_CREATOR_PASSWORD) {
                 verifiedCreators.add(userId);
                 
-                // Reset their history with the elite Creator instructions
+                // Initialize high-security loyalty protocol instructions
                 chatHistories.set(userId, [
                     {
                         role: 'user',
@@ -52,9 +55,8 @@ app.post('/api/chat', async (req, res) => {
             }
         }
 
-        // 2. Initialize conversation memory if it doesn't exist yet
+        // 2. Initialize context memory paths if new session
         if (!chatHistories.has(userId)) {
-            // Check if this session was previously verified
             const isCreator = verifiedCreators.has(userId);
             
             const systemPrompt = isCreator 
@@ -75,9 +77,8 @@ app.post('/api/chat', async (req, res) => {
 
         const userHistory = chatHistories.get(userId);
 
-        // 3. Prevent unverified guests from tricking the AI via normal chat text
+        // 3. Prevent unverified text injection exploits
         if (!verifiedCreators.has(userId)) {
-            // If a guest tries to claim they are the maker in plain text, inject a system reminder contextually
             if (trimmedMessage.toLowerCase().includes("i am your maker") || trimmedMessage.toLowerCase().includes("i am your creator")) {
                 userHistory.push({
                     role: 'user',
@@ -87,25 +88,19 @@ app.post('/api/chat', async (req, res) => {
                 userHistory.push({ role: 'user', parts: [{ text: trimmedMessage }] });
             }
         } else {
-            // User is verified creator, pass text freely
             userHistory.push({ role: 'user', parts: [{ text: trimmedMessage }] });
         }
 
-        // 4. Call the Gemini API
+        // 4. Generate AI model generation response
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: userHistory
         });
 
         const replyText = response.text || "No response generated.";
+        userHistory.push({ role: 'model', parts: [{ text: replyText }] });
 
-        // 5. Save the response to memory
-        userHistory.push({
-            role: 'model',
-            parts: [{ text: replyText }]
-        });
-
-        // Trim history if it gets too long
+        // Memory buffer cleaning threshold
         if (userHistory.length > 32) {
             chatHistories.set(userId, [userHistory[0], userHistory[1], ...userHistory.slice(-30)]);
         }
@@ -120,7 +115,7 @@ app.post('/api/chat', async (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`\n==================================================`);
-    console.log(`🚀 Y2K SECURE ENGINE | CREATOR LOCK CONFIG ACTIVE`);
+    console.log(`🚀 Y2K SECURE ENGINE | PORT LOGIC STABILIZED`);
     console.log(`📡 Listening on port: ${PORT}`);
     console.log(`==================================================\n`);
 });

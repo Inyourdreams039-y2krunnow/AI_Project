@@ -150,7 +150,7 @@
 </head>
 <body>
 
-    <h2 style="margin-bottom: 10px; transition: color 0.3s ease;">Y2K AI ENGINE</h2>
+    <h2 style="margin-bottom: 10px; transition: all 0.3s ease;">Y2K AI ENGINE</h2>
 
     <div id="chat-container">
         <div id="chat-box">
@@ -167,9 +167,9 @@
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
-        const pageTitle = document.querySelector('h2'); // Grabs your "Y2K AI ENGINE" heading
+        const pageTitle = document.querySelector('h2'); 
 
-        // Generate a random unique ID for this browser tab instance
+        // Generate a random unique ID for this browser tab instance to handle context isolation
         const userId = 'session-' + Math.random().toString(36).substr(2, 9);
 
         function scrollToBottom() {
