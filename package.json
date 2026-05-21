@@ -1,14 +1,14 @@
 {
-  "name": "y2k-inc",
+  "name": "ai_project",
   "version": "1.0.0",
-  "main": "server.js",
   "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
-    "axios": "^1.16.0",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^4.22.2",
-    "express-rate-limit": "^8.5.1",
-    "node-fetch": "^3.3.2"
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "@google/generative-ai": "^0.21.0"
   }
 }

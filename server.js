@@ -1,14 +1,16 @@
 import express from 'express';
 import cors from 'cors';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai'; // Correct import
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Note: I have removed express-rate-limit to stop the 500 error crashes.
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Initialize with the official class
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
 const chatHistories = new Map();
 
 app.post('/chat', async (req, res) => {
@@ -17,27 +19,20 @@ app.post('/chat', async (req, res) => {
         const userId = req.headers['x-forwarded-for'] || 'guest';
         
         if (!chatHistories.has(userId)) {
-            chatHistories.set(userId, [{ role: 'user', parts: [{ text: "System: You are an assistant." }] }]);
+            chatHistories.set(userId, []);
         }
 
         const history = chatHistories.get(userId);
-        history.push({ role: 'user', parts: [{ text: message }] });
-
-        const result = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
-            contents: history
-        });
-
-        const reply = result.text || "No response.";
-        history.push({ role: 'model', parts: [{ text: reply }] });
+        const chat = model.startChat({ history: history });
+        
+        const result = await chat.sendMessage(message);
+        const reply = await result.response.text();
         
         res.json({ reply: reply });
     } catch (e) {
-        console.error("Chat Error:", e); // This will log the real error in Render
+        console.error("Chat Error:", e);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
-app.listen(process.env.PORT || 3000, () => {
-    console.log("Server running on port " + (process.env.PORT || 3000));
-});
+app.listen(process.env.PORT || 3000);
