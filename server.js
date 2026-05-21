@@ -5,7 +5,7 @@ import { GoogleGenAI } from '@google/genai';
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public')); // Serves your original sidebar frontend files
+app.use(express.static('public')); 
 
 const PORT = process.env.PORT || 3000;
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -14,10 +14,10 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const chatHistories = new Map();
 const verifiedCreators = new Set(); 
 
-// Core passcode configuration
 const SECRET_CREATOR_PASSWORD = 'masterkey039'; 
 
-app.post('/api/chat', async (req, res) => {
+// CHANGED: Listens directly to /chat to match your sidebar frontend configuration
+app.post('/chat', async (req, res) => {
     try {
         const { message } = req.body;
 
@@ -25,22 +25,19 @@ app.post('/api/chat', async (req, res) => {
             return res.status(400).json({ error: 'Message content is required.' });
         }
 
-        // --- SECURITY LEAK FIX ---
-        // Instead of defaulting to 'default-user', we capture the user's IP address or 
-        // request origin headers to isolate their session memory securely.
+        // Isolate sessions cleanly by user IP signatures
         const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'global-guest';
         const userId = clientIp.toString(); 
 
         const trimmedMessage = message.trim();
 
-        // 1. Intercept security override commands
+        // 1. Intercept security passcode unlock commands
         if (trimmedMessage.startsWith('/unlock ')) {
             const passwordAttempt = trimmedMessage.replace('/unlock ', '').trim();
             
             if (passwordAttempt === SECRET_CREATOR_PASSWORD) {
                 verifiedCreators.add(userId);
                 
-                // Initialize high-security loyalty protocol instructions strictly for THIS IP session
                 chatHistories.set(userId, [
                     {
                         role: 'user',
@@ -58,7 +55,7 @@ app.post('/api/chat', async (req, res) => {
             }
         }
 
-        // 2. Initialize context memory paths if it's a brand new session for this IP
+        // 2. Initialize context memory arrays per IP session
         if (!chatHistories.has(userId)) {
             const isCreator = verifiedCreators.has(userId);
             
@@ -80,7 +77,7 @@ app.post('/api/chat', async (req, res) => {
 
         const userHistory = chatHistories.get(userId);
 
-        // 3. Prevent unverified text injection exploits
+        // 3. Counteract unauthorized text injection exploits
         if (!verifiedCreators.has(userId)) {
             if (trimmedMessage.toLowerCase().includes("i am your maker") || trimmedMessage.toLowerCase().includes("i am your creator")) {
                 userHistory.push({
@@ -94,7 +91,7 @@ app.post('/api/chat', async (req, res) => {
             userHistory.push({ role: 'user', parts: [{ text: trimmedMessage }] });
         }
 
-        // 4. Generate response via Gemini
+        // 4. Generate AI model generation response
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: userHistory
@@ -103,11 +100,11 @@ app.post('/api/chat', async (req, res) => {
         const replyText = response.text || "No response generated.";
         userHistory.push({ role: 'model', parts: [{ text: replyText }] });
 
-        // Memory buffer cleaning threshold (prevents server slowdowns)
         if (userHistory.length > 32) {
             chatHistories.set(userId, [userHistory[0], userHistory[1], ...userHistory.slice(-30)]);
         }
 
+        // Return JSON containing the expected 'reply' attribute
         res.json({ reply: replyText });
 
     } catch (error) {
@@ -118,7 +115,7 @@ app.post('/api/chat', async (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`\n==================================================`);
-    console.log(`🚀 Y2K SECURE ENGINE | ISOLATION ROUTING ACTIVE`);
+    console.log(`🚀 Y2K SECURE ENGINE | TERMINAL EN ROUTE VIA /CHAT`);
     console.log(`📡 Listening on port: ${PORT}`);
     console.log(`==================================================\n`);
 });
