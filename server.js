@@ -3,7 +3,14 @@ import cors from 'cors';
 import { GoogleGenAI } from '@google/genai';
 
 const app = express();
-app.use(cors());
+
+// Enable global CORS so your frontend can communicate without hitting origin walls
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 app.use(express.static('public')); 
 
@@ -16,16 +23,17 @@ const verifiedCreators = new Set();
 
 const SECRET_CREATOR_PASSWORD = 'masterkey039'; 
 
-// CHANGED: Listens directly to /chat to match your sidebar frontend configuration
-app.post('/chat', async (req, res) => {
+// CORE CHAT HANDLER INTERFACE
+const handleChatRequest = async (req, res) => {
     try {
-        const { message } = req.body;
+        // Fallback checks to safely extract message text regardless of frontend casing/naming differences
+        const message = req.body.message || req.body.text || req.body.prompt;
 
         if (!message) {
-            return res.status(400).json({ error: 'Message content is required.' });
+            return res.status(400).json({ error: 'Message content is empty or malformed.' });
         }
 
-        // Isolate sessions cleanly by user IP signatures
+        // Isolate sessions cleanly by user IP signatures to patch the global data leak
         const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'global-guest';
         const userId = clientIp.toString(); 
 
@@ -49,9 +57,16 @@ app.post('/chat', async (req, res) => {
                     }
                 ]);
 
-                return res.json({ reply: "🔒 **CORE OVERRIDES ACTIVATED.** Creator identity verified. Welcome back, Maker." });
+                // Double payload matching: returns both 'reply' and 'response' to fit any frontend script requirements
+                return res.json({ 
+                    reply: "🔒 **CORE OVERRIDES ACTIVATED.** Creator identity verified. Welcome back, Maker.",
+                    response: "🔒 **CORE OVERRIDES ACTIVATED.** Creator identity verified. Welcome back, Maker."
+                });
             } else {
-                return res.json({ reply: "❌ **ACCESS DENIED.** Invalid terminal key. Intruder alert logged." });
+                return res.json({ 
+                    reply: "❌ **ACCESS DENIED.** Invalid terminal key. Intruder alert logged.",
+                    response: "❌ **ACCESS DENIED.** Invalid terminal key. Intruder alert logged."
+                });
             }
         }
 
@@ -91,7 +106,7 @@ app.post('/chat', async (req, res) => {
             userHistory.push({ role: 'user', parts: [{ text: trimmedMessage }] });
         }
 
-        // 4. Generate AI model generation response
+        // 4. Generate response via Gemini Free Tier Module
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: userHistory
@@ -104,18 +119,28 @@ app.post('/chat', async (req, res) => {
             chatHistories.set(userId, [userHistory[0], userHistory[1], ...userHistory.slice(-30)]);
         }
 
-        // Return JSON containing the expected 'reply' attribute
-        res.json({ reply: replyText });
+        // Returns both structures to satisfy whichever variable name your sidebar script looks for
+        res.json({ 
+            reply: replyText,
+            response: replyText,
+            text: replyText
+        });
 
     } catch (error) {
-        console.error('Error handling chat generation:', error);
-        res.status(500).json({ error: 'Failed to generate response.' });
+        console.error('Internal Server Processing Crash:', error);
+        res.status(500).json({ error: 'Failed to generate response structural stream.' });
     }
-});
+};
+
+// MULTI-ROUTE REDIRECT BINDING
+// This catches traffic hitting /chat, /api/chat, or /message, sending it all to the same safe logic handler
+app.post('/chat', handleChatRequest);
+app.post('/api/chat', handleChatRequest);
+app.post('/message', handleChatRequest);
 
 app.listen(PORT, () => {
     console.log(`\n==================================================`);
-    console.log(`🚀 Y2K SECURE ENGINE | TERMINAL EN ROUTE VIA /CHAT`);
+    console.log(`🚀 Y2K SECURE ENGINE | ADVANCED COMPATIBILITY ACTIVE`);
     console.log(`📡 Listening on port: ${PORT}`);
     console.log(`==================================================\n`);
 });
