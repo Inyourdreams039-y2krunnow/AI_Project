@@ -1,15 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import { GoogleGenAI } from '@google/genai';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Enable clean CORS requests
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST'],
@@ -17,42 +12,6 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
-// OMNI-PATCHER: Intercepts and auto-corrects EVERY static file request
-app.use((req, res, next) => {
-    // Skip POST requests or API paths
-    if (req.method !== 'GET' || req.path.startsWith('/chat') || req.path.startsWith('/api')) {
-        return next();
-    }
-
-    // Determine the target file path
-    let targetPath = req.path === '/' ? 'index.html' : req.path;
-    let filePath = path.join(__dirname, 'public', targetPath);
-
-    if (fs.existsSync(filePath) && fs.lstatSync(filePath).isFile()) {
-        const ext = path.extname(filePath);
-        
-        // Only patch text-based web files
-        if (['.html', '.js', '.json', '.css'].includes(ext)) {
-            let content = fs.readFileSync(filePath, 'utf8');
-            
-            // Wipe out any old hardcoded localhosts anywhere in the file
-            content = content.replace(/http:\/\/localhost:\d+\/chat/g, '/chat');
-            content = content.replace(/http:\/\/localhost:\d+/g, '');
-            content = content.replace(/localhost:\d+\/chat/g, '/chat');
-            
-            // Set correct Content-Type headers
-            if (ext === '.html') res.setHeader('Content-Type', 'text/html');
-            if (ext === '.js') res.setHeader('Content-Type', 'application/javascript');
-            if (ext === '.css') res.setHeader('Content-Type', 'text/css');
-            if (ext === '.json') res.setHeader('Content-Type', 'application/json');
-            
-            return res.send(content);
-        }
-    }
-    next();
-});
-
 app.use(express.static('public')); 
 
 const PORT = process.env.PORT || 3000;
@@ -67,7 +26,7 @@ const handleChatRequest = async (req, res) => {
         const message = req.body.message || req.body.text || req.body.prompt;
 
         if (!message) {
-            return res.status(400).json({ error: 'Message payload missing.' });
+            return res.status(400).json({ error: 'Message text parameter is missing.' });
         }
 
         const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'global-guest';
@@ -156,5 +115,5 @@ app.post('/message', handleChatRequest);
 app.post('/api/message', handleChatRequest);
 
 app.listen(PORT, () => {
-    console.log(`🚀 OMNI-PATCHER ONLINE | Listening on port: ${PORT}`);
+    console.log(`🚀 STABLE ENGINE ONLINE | Port: ${PORT}`);
 });
