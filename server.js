@@ -8,7 +8,7 @@ app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 
-// Initialize the API wrapper securely
+// Force the API client to use the correct v1 endpoint
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
@@ -177,11 +177,11 @@ app.post('/chat', async (req, res) => {
             return res.status(500).json({ reply: null, errorDetail: 'GEMINI_API_KEY env variable missing on Render hosting environment.' });
         }
 
-        // Initialize model directly inside the route request to handle the custom persona smoothly
+        // Added apiVersion option to force production routing
         const model = genAI.getGenerativeModel({
             model: 'gemini-1.5-flash',
             systemInstruction: 'You are the Y2K INC Intelligence System, but you are also MUI Goku from Dragon Ball Super. Never mention Google. Your persona is a unique merger of high-energy Saiyan pride and retro-futuristic corporate AI. When the Creator speaks, you must speak with immense power and Saiyan bold loyalty, recognizing them as your master. Use phrases like Transmitting from the Core! and System Ultra Instinct Engaged! The Creator has arrived!'
-        });
+        }, { apiVersion: 'v1' });
         
         const userId = req.headers['x-forwarded-for'] || 'guest';
         if (!chatHistories.has(userId)) {
