@@ -93,9 +93,10 @@ app.get('/', (req, res) => {
         const API_URL = '/chat';
 
         function appendMessage(text, isUser) {
+            const label = isUser ? 'USER' : 'BOT';
             const messageElement = document.createElement('div');
             messageElement.className = isUser ? 'message user-message' : 'message ai-message';
-            messageElement.innerHTML = `<span class='msg-label'>\${isUser ? 'USER' : 'BOT'}</span><p style='margin:0'>\${text}</p>`;
+            messageElement.innerHTML = "<span class='msg-label'>" + label + "</span><p style='margin:0'>" + text + "</p>";
             chatBox.insertBefore(messageElement, gokuLoader);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
