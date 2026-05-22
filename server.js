@@ -8,16 +8,9 @@ app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 
-// This helper ensures your API key is cleanly read from Render
-const getModelInstance = () => {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return null;
-    const genAI = new GoogleGenerativeAI(apiKey);
-    return genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
-        system_instruction: 'You are the Y2K INC Intelligence System, but you are also MUI Goku from Dragon Ball Super. Never mention Google. Your persona is a unique merger of high-energy Saiyan pride and retro-futuristic corporate AI. When the Creator speaks, you must speak with immense power and Saiyan bold loyalty, recognizing them as your master. Use phrases like Transmitting from the Core! and System Ultra Instinct Engaged! The Creator has arrived!'
-    });
-};
+// Initialize the API wrapper securely
+const apiKey = process.env.GEMINI_API_KEY;
+const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 const chatHistories = new Map();
 
@@ -31,7 +24,6 @@ app.get('/', (req, res) => {
     <style>
         body { background-color: #666666; color: #ff7700; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; }
         .sidebar { width: 280px; background-color: #111; display: flex; flex-direction: column; padding: 25px 20px; box-sizing: border-box; z-index: 10; gap: 15px; }
-        .sidebar-header { text-align: center; font-size: 24px; font-weight: 900; padding-bottom: 10px; color: #ff5500; letter-spacing: 3px; font-family: 'Impact', Arial, sans-serif; display: none; }
         .new-session-btn { background: linear-gradient(to right, #ff007f, #ff0055); color: white; padding: 16px; font-weight: bold; border-radius: 15px; border: none; cursor: pointer; text-align: center; font-size: 14px; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(255,0,85,0.4); text-transform: uppercase; }
         .archive-section { margin-top: 25px; flex-grow: 1; }
         .section-title { font-size: 11px; opacity: 0.4; margin-bottom: 15px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; color: #fff; }
@@ -53,7 +45,7 @@ app.get('/', (req, res) => {
         .msg-label { font-weight: 800; font-size: 11px; position: absolute; top: -24px; left: 12px; letter-spacing: 1px; color: #ff5500; text-transform: uppercase; }
         .user-message .msg-label { color: #ff9900; left: auto; right: 12px; }
         
-        .goku-loader-container { display: none; align-self: flex-start; margin-left: 15px; }
+        .goku-loader-container { display: none; align-self: flex-start; margin-left: 15px; margin-bottom: 10px; }
         .goku-loader { width: 85px; filter: drop-shadow(0 0 8px #ff5500); }
         
         .input-area { background-color: #666666; padding: 20px 50px 40px 50px; display: flex; align-items: center; gap: 15px; }
@@ -107,7 +99,7 @@ app.get('/', (req, res) => {
             </button>
 
             <div class='input-container-wrapper'>
-                <input type='text' id='user-input' placeholder='Type a message...' autocomplete='off'>
+                <input type='text' id='user-input' placeholder='Listening...' autocomplete='off'>
                 <button class='execute-btn' id='send-btn'>
                     <svg class='execute-icon' viewBox='0 0 24 24' fill='currentColor'><path d='M2 21l21-9L2 3v7l15 2-15 2v7z'/></svg>
                 </button>
@@ -180,11 +172,16 @@ app.get('/', (req, res) => {
 app.post('/chat', async (req, res) => {
     try {
         const { message } = req.body;
-        const model = getModelInstance();
         
-        if (!model) {
-            return res.status(500).json({ reply: null, errorDetail: 'GEMINI_API_KEY environment variable is not defined or unreadable.' });
+        if (!genAI) {
+            return res.status(500).json({ reply: null, errorDetail: 'GEMINI_API_KEY env variable missing on Render hosting environment.' });
         }
+
+        // Initialize model directly inside the route request to handle the custom persona smoothly
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-1.5-flash',
+            systemInstruction: 'You are the Y2K INC Intelligence System, but you are also MUI Goku from Dragon Ball Super. Never mention Google. Your persona is a unique merger of high-energy Saiyan pride and retro-futuristic corporate AI. When the Creator speaks, you must speak with immense power and Saiyan bold loyalty, recognizing them as your master. Use phrases like Transmitting from the Core! and System Ultra Instinct Engaged! The Creator has arrived!'
+        });
         
         const userId = req.headers['x-forwarded-for'] || 'guest';
         if (!chatHistories.has(userId)) {
