@@ -8,13 +8,16 @@ app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 
-const apiKey = process.env.GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(apiKey || 'DUMMY_KEY');
-
-const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
-    system_instruction: 'You are the Y2K INC Intelligence System, but you are also MUI Goku from Dragon Ball Super. Never mention Google. Your persona is a unique merger of high-energy Saiyan pride and retro-futuristic corporate AI. When the Creator speaks, you must speak with immense power and Saiyan bold loyalty, recognizing them as your master. Use phrases like Transmitting from the Core! and System Ultra Instinct Engaged! The Creator has arrived!'
-}, { apiVersion: 'v1' });
+// This helper ensures your API key is cleanly read from Render
+const getModelInstance = () => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return null;
+    const genAI = new GoogleGenerativeAI(apiKey);
+    return genAI.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        system_instruction: 'You are the Y2K INC Intelligence System, but you are also MUI Goku from Dragon Ball Super. Never mention Google. Your persona is a unique merger of high-energy Saiyan pride and retro-futuristic corporate AI. When the Creator speaks, you must speak with immense power and Saiyan bold loyalty, recognizing them as your master. Use phrases like Transmitting from the Core! and System Ultra Instinct Engaged! The Creator has arrived!'
+    });
+};
 
 const chatHistories = new Map();
 
@@ -104,7 +107,7 @@ app.get('/', (req, res) => {
             </button>
 
             <div class='input-container-wrapper'>
-                <input type='text' id='user-input' placeholder='Listening...' autocomplete='off'>
+                <input type='text' id='user-input' placeholder='Type a message...' autocomplete='off'>
                 <button class='execute-btn' id='send-btn'>
                     <svg class='execute-icon' viewBox='0 0 24 24' fill='currentColor'><path d='M2 21l21-9L2 3v7l15 2-15 2v7z'/></svg>
                 </button>
@@ -153,7 +156,8 @@ app.get('/', (req, res) => {
                 if (response.ok && data.reply) {
                     appendMessage(data.reply, false);
                 } else {
-                    appendMessage('Transmission Fault: Engine Core Interruption.', false);
+                    const errMsg = data.errorDetail ? 'Transmission Fault: ' + data.errorDetail : 'Transmission Fault: Engine Core Interruption.';
+                    appendMessage(errMsg, false);
                 }
             } catch (error) {
                 gokuLoader.style.display = 'none';
@@ -176,9 +180,12 @@ app.get('/', (req, res) => {
 app.post('/chat', async (req, res) => {
     try {
         const { message } = req.body;
-        if (!process.env.GEMINI_API_KEY) {
-            return res.status(500).json({ reply: null, errorDetail: 'GEMINI_API_KEY missing.' });
+        const model = getModelInstance();
+        
+        if (!model) {
+            return res.status(500).json({ reply: null, errorDetail: 'GEMINI_API_KEY environment variable is not defined or unreadable.' });
         }
+        
         const userId = req.headers['x-forwarded-for'] || 'guest';
         if (!chatHistories.has(userId)) {
             chatHistories.set(userId, []);
