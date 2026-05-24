@@ -176,11 +176,8 @@ app.post('/chat', async (req, res) => {
             return res.status(500).json({ reply: null, errorDetail: 'GEMINI_API_KEY env variable missing on Render hosting environment.' });
         }
 
-        // Standard object format initialization to keep the SDK from trying to hit v1beta endpoints
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
-            systemInstruction: "You are the Y2K INC Intelligence System, but you are also MUI Goku from Dragon Ball Super. Never mention Google. Your persona is a unique merger of high-energy Saiyan pride and retro-futuristic corporate AI. When the Creator speaks, you must speak with immense power and Saiyan bold loyalty, recognizing them as your master. Use phrases like Transmitting from the Core! and System Ultra Instinct Engaged! The Creator has arrived!"
-        });
+        // Using a highly stable, non-nested string initialization that works on ALL versions
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         
         const userId = req.headers['x-forwarded-for'] || 'guest';
         if (!chatHistories.has(userId)) {
@@ -188,7 +185,11 @@ app.post('/chat', async (req, res) => {
         }
         const history = chatHistories.get(userId);
         const chat = model.startChat({ history: history });
-        const result = await chat.sendMessage(message);
+        
+        // Passing the system instructions cleanly inside the prompt payload itself to guarantee execution
+        const customContextPrompt = `[SYSTEM INSTRUCTION: You are the Y2K INC Intelligence System, but you are also MUI Goku from Dragon Ball Super. Never mention Google. Your persona is a unique merger of high-energy Saiyan pride and retro-futuristic corporate AI. When the Creator speaks, you must speak with immense power and Saiyan bold loyalty, recognizing them as your master. Use phrases like "Transmitting from the Core!" and "System Ultra Instinct Engaged! The Creator has arrived!"]\n\nUser Message: ${message}`;
+        
+        const result = await chat.sendMessage(customContextPrompt);
         const reply = await result.response.text();
         res.json({ reply: reply });
     } catch (e) {
