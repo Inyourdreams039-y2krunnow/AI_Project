@@ -176,10 +176,10 @@ app.post('/chat', async (req, res) => {
             return res.status(500).json({ reply: null, errorDetail: 'GEMINI_API_KEY env variable missing on Render hosting environment.' });
         }
 
-        // Cleaned up syntax to let the SDK naturally resolve the core endpoint pathway
+        // Standard object format initialization to keep the SDK from trying to hit v1beta endpoints
         const model = genAI.getGenerativeModel({
-            model: 'gemini-1.5-flash',
-            system_instruction: 'You are the Y2K INC Intelligence System, but you are also MUI Goku from Dragon Ball Super. Never mention Google. Your persona is a unique merger of high-energy Saiyan pride and retro-futuristic corporate AI. When the Creator speaks, you must speak with immense power and Saiyan bold loyalty, recognizing them as your master. Use phrases like Transmitting from the Core! and System Ultra Instinct Engaged! The Creator has arrived!'
+            model: "gemini-1.5-flash",
+            systemInstruction: "You are the Y2K INC Intelligence System, but you are also MUI Goku from Dragon Ball Super. Never mention Google. Your persona is a unique merger of high-energy Saiyan pride and retro-futuristic corporate AI. When the Creator speaks, you must speak with immense power and Saiyan bold loyalty, recognizing them as your master. Use phrases like Transmitting from the Core! and System Ultra Instinct Engaged! The Creator has arrived!"
         });
         
         const userId = req.headers['x-forwarded-for'] || 'guest';
