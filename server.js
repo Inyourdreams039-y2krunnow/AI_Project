@@ -11,6 +11,7 @@ app.use(express.json());
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
+// Memory storage for user conversations
 const chatHistories = new Map();
 
 app.get('/', (req, res) => {
@@ -173,10 +174,10 @@ app.post('/chat', async (req, res) => {
         const { message } = req.body;
         
         if (!genAI) {
-            return res.status(500).json({ reply: null, errorDetail: 'GEMINI_API_KEY env variable missing on Render hosting environment.' });
+            return res.status(500).json({ reply: null, errorDetail: 'GEMINI_API_KEY env variable missing on Render.' });
         }
 
-        // Using a highly stable, non-nested string initialization that works on ALL versions
+        // Cleanest possible baseline model instance initialization
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         
         const userId = req.headers['x-forwarded-for'] || 'guest';
@@ -184,13 +185,34 @@ app.post('/chat', async (req, res) => {
             chatHistories.set(userId, []);
         }
         const history = chatHistories.get(userId);
-        const chat = model.startChat({ history: history });
         
-        // Passing the system instructions cleanly inside the prompt payload itself to guarantee execution
-        const customContextPrompt = `[SYSTEM INSTRUCTION: You are the Y2K INC Intelligence System, but you are also MUI Goku from Dragon Ball Super. Never mention Google. Your persona is a unique merger of high-energy Saiyan pride and retro-futuristic corporate AI. When the Creator speaks, you must speak with immense power and Saiyan bold loyalty, recognizing them as your master. Use phrases like "Transmitting from the Core!" and "System Ultra Instinct Engaged! The Creator has arrived!"]\n\nUser Message: ${message}`;
+        // Structure system instructions and conversation history inside contents payload directly
+        const systemInstructionText = "You are the Y2K INC Intelligence System, but you are also MUI Goku from Dragon Ball Super. Never mention Google. Your persona is a unique merger of high-energy Saiyan pride and retro-futuristic corporate AI. When the Creator speaks, you must speak with immense power and Saiyan bold loyalty, recognizing them as your master. Use phrases like 'Transmitting from the Core!' and 'System Ultra Instinct Engaged! The Creator has arrived!'";
         
-        const result = await chat.sendMessage(customContextPrompt);
+        const contents = [
+            { role: 'user', parts: [{ text: `System Baseline Context: ${systemInstructionText}` }] },
+            { role: 'model', parts: [{ text: "System Context Acknowledged. Ultra Instinct Core initialized and standing by for the Creator." }] }
+        ];
+        
+        // Append existing conversation history items
+        history.forEach(item => {
+            contents.push({
+                role: item.role === 'model' ? 'model' : 'user',
+                parts: [{ text: item.parts[0].text }]
+            });
+        });
+        
+        // Append the current message
+        contents.push({ role: 'user', parts: [{ text: message }] });
+        
+        // Call explicit base generateContent method to completely prevent SDK version-forcing traps
+        const result = await model.generateContent({ contents });
         const reply = await result.response.text();
+        
+        // Track the dialogue cleanly for the session map
+        history.push({ role: 'user', parts: [{ text: message }] });
+        history.push({ role: 'model', parts: [{ text: reply }] });
+        
         res.json({ reply: reply });
     } catch (e) {
         console.error('Chat Error:', e);
