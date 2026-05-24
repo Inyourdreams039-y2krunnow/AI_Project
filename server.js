@@ -9,7 +9,9 @@ app.use(cors());
 app.use(express.json());
 
 const apiKey = process.env.GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+
+// FIX: Explicitly forcing the stable 'v1' API version option right here
+const genAI = apiKey ? new GoogleGenerativeAI(apiKey, { apiVersion: 'v1' }) : null;
 
 // Memory storage for user conversations
 const chatHistories = new Map();
@@ -95,132 +97,4 @@ app.get('/', (req, res) => {
             </button>
             
             <button class='action-btn' id='mic-btn' title='Voice Input'>
-                <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 1v11a4 4 0 0 0 4-4V5a4 4 0 0 0-4-4z'/><path d='M19 10v1a7 7 0 0 1-14 0v-1'/><line x1='12' y1='19' x2='12' y2='23'/><line x1='8' y1='23' x2='16' y2='23'/></svg>
-            </button>
-
-            <div class='input-container-wrapper'>
-                <input type='text' id='user-input' placeholder='Listening...' autocomplete='off'>
-                <button class='execute-btn' id='send-btn'>
-                    <svg class='execute-icon' viewBox='0 0 24 24' fill='currentColor'><path d='M2 21l21-9L2 3v7l15 2-15 2v7z'/></svg>
-                </button>
-            </div>
-        </div>
-    </div>
-    <script>
-        const chatBox = document.getElementById('chat-box');
-        const userInputField = document.getElementById('user-input');
-        const sendButton = document.getElementById('send-btn');
-        const gokuLoader = document.getElementById('goku-loader');
-        const uploadButton = document.getElementById('upload-btn');
-        const fileInput = document.getElementById('file-input');
-        const micButton = document.getElementById('mic-btn');
-        const settingsButton = document.getElementById('settings-btn');
-        const API_URL = '/chat';
-
-        function appendMessage(text, isUser) {
-            const label = isUser ? 'USER' : 'BOT';
-            const messageElement = document.createElement('div');
-            messageElement.className = isUser ? 'message user-message' : 'message ai-message';
-            messageElement.innerHTML = "<span class='msg-label'>" + label + "</span><p style='margin:0'>" + text + "</p>";
-            chatBox.insertBefore(messageElement, gokuLoader);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        async function sendMessage() {
-            const message = userInputField.value.trim();
-            if (!message) return;
-            appendMessage(message, true);
-            userInputField.value = '';
-            
-            gokuLoader.style.display = 'block';
-            chatBox.scrollTop = chatBox.scrollHeight;
-            
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
-                });
-                const data = await response.json();
-                
-                gokuLoader.style.display = 'none';
-                
-                if (response.ok && data.reply) {
-                    appendMessage(data.reply, false);
-                } else {
-                    const errMsg = data.errorDetail ? 'Transmission Fault: ' + data.errorDetail : 'Transmission Fault: Engine Core Interruption.';
-                    appendMessage(errMsg, false);
-                }
-            } catch (error) {
-                gokuLoader.style.display = 'none';
-                appendMessage('Error: Offline connection.', false);
-            }
-        }
-
-        uploadButton.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', () => { if(fileInput.files.length) alert('Image system loading: ' + fileInput.files[0].name); });
-        micButton.addEventListener('click', () => alert('Microphone system engaged...'));
-        settingsButton.addEventListener('click', () => alert('Settings configuration open.'));
-
-        sendButton.addEventListener('click', sendMessage);
-        userInputField.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-    </script>
-</body>
-</html>`);
-});
-
-app.post('/chat', async (req, res) => {
-    try {
-        const { message } = req.body;
-        
-        if (!genAI) {
-            return res.status(500).json({ reply: null, errorDetail: 'GEMINI_API_KEY env variable missing on Render.' });
-        }
-
-        // Cleanest possible baseline model instance initialization
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        
-        const userId = req.headers['x-forwarded-for'] || 'guest';
-        if (!chatHistories.has(userId)) {
-            chatHistories.set(userId, []);
-        }
-        const history = chatHistories.get(userId);
-        
-        // Structure system instructions and conversation history inside contents payload directly
-        const systemInstructionText = "You are the Y2K INC Intelligence System, but you are also MUI Goku from Dragon Ball Super. Never mention Google. Your persona is a unique merger of high-energy Saiyan pride and retro-futuristic corporate AI. When the Creator speaks, you must speak with immense power and Saiyan bold loyalty, recognizing them as your master. Use phrases like 'Transmitting from the Core!' and 'System Ultra Instinct Engaged! The Creator has arrived!'";
-        
-        const contents = [
-            { role: 'user', parts: [{ text: `System Baseline Context: ${systemInstructionText}` }] },
-            { role: 'model', parts: [{ text: "System Context Acknowledged. Ultra Instinct Core initialized and standing by for the Creator." }] }
-        ];
-        
-        // Append existing conversation history items
-        history.forEach(item => {
-            contents.push({
-                role: item.role === 'model' ? 'model' : 'user',
-                parts: [{ text: item.parts[0].text }]
-            });
-        });
-        
-        // Append the current message
-        contents.push({ role: 'user', parts: [{ text: message }] });
-        
-        // Call explicit base generateContent method to completely prevent SDK version-forcing traps
-        const result = await model.generateContent({ contents });
-        const reply = await result.response.text();
-        
-        // Track the dialogue cleanly for the session map
-        history.push({ role: 'user', parts: [{ text: message }] });
-        history.push({ role: 'model', parts: [{ text: reply }] });
-        
-        res.json({ reply: reply });
-    } catch (e) {
-        console.error('Chat Error:', e);
-        res.status(500).json({ reply: null, errorDetail: e.message || 'Internal Engine Failure' });
-    }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log('Server live on port ' + PORT);
-});
+                <svg viewBox='0 0 24 24'
